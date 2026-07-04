@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:weightSum="2"
+    android:background="#94A596"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:layout_margin="8dp"
+        android:background="@drawable/bg_display_moldura"
+        android:elevation="4dp"> <TextView
+        android:id="@+id/tvLabelDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="IDENTIFICAÇÃO DIGITADA"
+        android:textColor="#9CA3AF"
+        android:textSize="13sp"
+        android:letterSpacing="0.15"
+        android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:id="@+id/tvDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#DEFF9A"
+            android:textSize="80sp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:fontFamily="sans-serif-medium"
+            android:ellipsize="start"
+            android:hint="0"
+            android:textColorHint="#FFFFFF"/>
+    </LinearLayout>
+
+    <GridLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:padding="8dp"
+        android:alignmentMode="alignBounds"
+        android:columnOrderPreserved="false">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn7"
+            android:text="7"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn8"
+            android:text="8"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn9"
+            android:text="9"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn4"
+            android:text="4"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn5"
+            android:text="5"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn6"
+            android:text="6"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn1"
+            android:text="1"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn2"
+            android:text="2"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn3"
+            android:text="3"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnDelete"
+            android:text="DEL"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/bg_botao_delete"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="30sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn0"
+            android:text="0"
+            android:textColor="#F9FAFB"
+            android:background="@drawable/bg_botao_moderno"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="48sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnEnter"
+            android:text="ENTER"
+            android:textColor="#111827"
+            android:background="@drawable/bg_botao_enter"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="6dp"
+            android:textSize="30sp"
+            android:fontFamily="sans-serif-medium" />
+
+    </GridLayout>
+</LinearLayout>
