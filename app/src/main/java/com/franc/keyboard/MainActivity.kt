@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var inputBuffer = StringBuilder()
     private lateinit var tvDisplay: TextView
 
+    @Volatile private var serverSocket: java.net.ServerSocket? = null
     @Volatile private var socket: Socket? = null
     @Volatile private var outputStream: OutputStream? = null
     @Volatile private var conectando = false
@@ -140,20 +141,36 @@ class MainActivity : AppCompatActivity() {
         if (socket != null || conectando) return
         conectando = true
         thread {
-            while (ativo && socket == null) {
-                try {
-                    val s = Socket()
-                    s.connect(InetSocketAddress(rpiHost, RPI_PORT), CONNECT_TIMEOUT_MS)
-                    socket = s
-                    outputStream = s.getOutputStream()
-                    runOnUiThread {
-                        Toast.makeText(this, "Conectado à catraca ($rpiHost)", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: IOException) {
-                    Thread.sleep(RETRY_DELAY_MS)
+            try {
+                // Em vez de conectar a um IP externo, o tablet vira o SERVIDOR
+                // Ele abre a porta localmente e espera o computador se conectar a ele
+                if (serverSocket == null) {
+                    serverSocket = java.net.ServerSocket(RPI_PORT)
                 }
+
+                while (ativo && socket == null) {
+                    try {
+                        // Fica aguardando a conexão vinda do cabo USB (via comando ADB)
+                        val s = serverSocket?.accept()
+                        if (s != null) {
+                            socket = s
+                            outputStream = s.getOutputStream()
+                            runOnUiThread {
+                                Toast.makeText(this, "Computador conectado via USB!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } catch (e: IOException) {
+                        if (!ativo) break
+                        Thread.sleep(RETRY_DELAY_MS)
+                    }
+                }
+            } catch (e: IOException) {
+                runOnUiThread {
+                    Toast.makeText(this, "Erro ao abrir porta $RPI_PORT", Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                conectando = false
             }
-            conectando = false
         }
     }
 
@@ -161,9 +178,9 @@ class MainActivity : AppCompatActivity() {
         try {
             outputStream?.close()
             socket?.close()
-        } catch (e: Exception) {
-            // ignorado: conexão já pode estar quebrada
-        }
+        } catch (e: Exception) { /* ignorado */ }
+
+        // Não feche o serverSocket aqui se quiser que ele continue ouvindo novas conexões após quedas
         outputStream = null
         socket = null
     }
