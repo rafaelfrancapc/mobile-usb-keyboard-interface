@@ -1,4 +1,0 @@
-# Permite que qualquer processo do grupo "input" abra /dev/uinput sem ser
-# root. O usuário "catraca" (dono do serviço catraca-bridge.service) precisa
-# estar nesse grupo — veja o README.
-KERNEL=="uinput", GROUP="input", MODE="0660"

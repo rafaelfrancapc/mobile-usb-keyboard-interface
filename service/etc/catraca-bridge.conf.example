@@ -1,22 +1,19 @@
-# /etc/catraca-bridge.conf
+# ~/.config/catraca-bridge.conf
 #
-# IP do TABLET na rede privada entre ele e a Pi (RNDIS/USB ou Wi-Fi — o que
-# vocês estiverem usando). É pra este IP que a Pi vai rodar `adb connect`.
-#
-# Pra descobrir/confirmar esse IP, veja o menu oculto de rede do app (segure
-# o rótulo "IDENTIFICAÇÃO DIGITADA" na tela do tablet).
+# IP do TABLET na rede privada entre ele e a Pi. É pra este IP que a Pi vai
+# rodar `adb connect`. Confirme no menu oculto de rede do app (segure o
+# rótulo "IDENTIFICAÇÃO DIGITADA" na tela do tablet).
 #
 # TROQUE ISSO — não deixe o valor de exemplo abaixo:
 CATRACA_TABLET_IP=192.168.42.129
 
-# Porta do adbd no tablet. Precisa estar em modo tcpip (adb tcpip 5555) —
-# normalmente não precisa mudar isso.
+# Porta do adbd no tablet (precisa estar em `adb tcpip 5555`).
 CATRACA_ADB_PORT=5555
 
 # Porta que o app abre no tablet e que a Pi encaminha via `adb forward`.
-# Precisa bater com a porta configurada no app (RPI_PORT no MainActivity.kt).
 CATRACA_APP_PORT=8765
 
-# uinput = digita de verdade no teclado virtual da Pi (produção).
-# log    = só imprime o que digitaria, sem mexer em /dev/uinput (teste).
-CATRACA_INPUT_MODE=uinput
+# pyautogui = digita de verdade na janela em foco (produção).
+# log       = só imprime o que digitaria, sem tocar em pyautogui (teste,
+#             funciona até sem sessão gráfica).
+CATRACA_INPUT_MODE=pyautogui

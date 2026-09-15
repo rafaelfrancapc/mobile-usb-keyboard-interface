@@ -1,138 +1,105 @@
-# catraca-bridge
+# catraca-bridge (Python / pyautogui)
 
-Substitui o `rpi_adb_bridge.py` do
-[mobile-usb-keyboard-interface](https://github.com/rafaelfrancapc/mobile-usb-keyboard-interface)
-por um serviço em C, rodando via systemd na Raspberry Pi, usando **ADB de
-rede** em vez de ADB via cabo USB, e **uinput** (teclado virtual de kernel)
-em vez de `pyautogui` pra reproduzir a credencial.
+Substitui a versão em C. Faz a mesma ponte adb de rede (`adb connect` +
+`adb forward`), mas digita a credencial com `pyautogui`, na sessão gráfica
+local da Raspberry Pi — porque aqui o alvo é um programa com tela própria
+rodando **na própria Pi**, não uma máquina externa via USB. (Se um dia o
+alvo mudar pra uma máquina externa ligada por USB, essa abordagem para de
+servir — nesse cenário só `uinput`/HID resolve, como na versão em C.)
 
-## Por que o app Android não precisou mudar
+## Se você já tinha instalado a versão em C
 
-Vale registrar isso porque não é óbvio à primeira vista: o `MainActivity.kt`
-já é **agnóstico de transporte**. Ele nunca discou pra lugar nenhum — ele
-abre um `ServerSocket` local na porta 8765 e fica esperando alguém conectar
-(`garantirConexao()`). Do ponto de vista do app, USB e rede são a mesma
-coisa: ele só sabe que "alguém conectou no meu socket local". Quem decide
-*como* essa conexão chega até lá é o lado de fora — antes era `adb forward`
-puro (o computador já enxergava o tablet via cabo, e o Android Studio
-autoriza isso automaticamente); agora precisamos de um passo a mais
-(`adb connect <ip>`) antes do mesmo `adb forward` de sempre.
-
-Ou seja: **nenhuma mudança é necessária no app** pra essa migração. O que
-muda é só o lado da Pi.
-
-> Sobre reescrever o app inteiro em C (NDK/NativeActivity, sem Kotlin): dá
-> pra fazer, mas é um projeto grande à parte — sem Java você perde de graça
-> coisas como `EditText`/`AlertDialog` (o menu oculto de IP viraria um
-> teclado desenhado na mão), `Vibrator`/`AudioManager` (passam a exigir JNI
-> manual) e a fonte com acentuação (exigiria rasterizar glifos via
-> `stb_truetype` a partir de um `.ttf` do sistema). Como o app atual já
-> funciona e é indiferente a USB vs. rede, não é um bloqueio pra essa
-> mudança de arquitetura — me avisa se ainda assim quiser que eu encare essa
-> reescrita à parte.
-
-## Arquitetura
-
-```
-┌─────────────────────┐        rede privada         ┌──────────────────────────┐
-│   Tablet (Android)   │  (RNDIS/USB ou Wi-Fi)       │      Raspberry Pi         │
-│                       │◄────────────────────────────┤                          │
-│  MainActivity.kt      │   adb connect <ip>:5555     │  catraca-bridge (C)      │
-│  ServerSocket :8765   │   adb forward tcp:8765      │   1. adb connect         │
-│  (menu oculto de IP   │   tcp:8765                  │   2. adb forward         │
-│   ainda guarda o      │                              │   3. connect            │
-│   rpiHost, hoje só    │◄────────────────────────────┤      127.0.0.1:8765      │
-│   informativo)        │   credencial + "\n"          │   4. valida e chama     │
-└─────────────────────┘                              │      uinput (KEY_0..9,   │
-                                                        │      KEY_ENTER)          │
-                                                        │           │              │
-                                                        │           ▼              │
-                                                        │   /dev/uinput            │
-                                                        │   (teclado virtual)      │
-                                                        └──────────────┬───────────┘
-                                                                       │ USB
-                                                                       ▼
-                                                          PC do controle de acesso
-```
-
-## Pré-requisitos
-
-**Na Pi:**
-- `adb` instalado e no PATH: `sudo apt install android-tools-adb` (ou o
-  pacote `platform-tools` da Google, se preferir uma versão mais nova)
-- kernel com uinput disponível (`sudo modprobe uinput`; pra carregar sempre
-  no boot, adicione `uinput` em `/etc/modules`)
-
-**No tablet:**
-- depuração USB habilitada (Opções do desenvolvedor)
-- `adb tcpip 5555` executado ao menos uma vez (com o tablet plugado por USB
-  numa máquina com adb, rode `adb tcpip 5555`). Isso liga o `adbd` em modo
-  rede na porta 5555. **Isso não persiste sozinho após reiniciar o tablet**
-  — se ele reiniciar, alguém precisa plugar o cabo de novo e rodar o comando
-  uma vez, a não ser que vocês automatizem isso via root (`setprop
-  service.adb.tcp.port 5555` num script de boot, se o tablet for rooted).
-- app instalado e rodando (ele já abre a porta 8765 sozinho no `onCreate`)
-- confirmado o IP do tablet na rede privada (o hidden menu — segure
-  "IDENTIFICAÇÃO DIGITADA" — mostra/edita esse valor hoje só como referência
-  informativa, já que quem precisa dele de verdade agora é a configuração da
-  Pi, não o app)
-
-## Build e instalação
+Desative e limpe antes de instalar esta:
 
 ```sh
-make
-sudo make install
+sudo systemctl disable --now catraca-bridge   # a versão de sistema, em C
+sudo rm /etc/systemd/system/catraca-bridge.service
+sudo rm /etc/udev/rules.d/99-catraca-uinput.rules
+sudo systemctl daemon-reload
 ```
 
-Isso instala o binário em `/usr/local/bin/catraca-bridge`, o unit file, a
-regra de udev, e copia `etc/catraca-bridge.conf.example` pra
-`/etc/catraca-bridge.conf` (sem sobrescrever se já existir).
+(Não precisa remover o usuário `catraca` nem `/dev/uinput` — só não vão mais
+ser usados por este projeto.)
 
-**Antes de habilitar o serviço:**
-
-1. Crie o usuário dedicado, com HOME de verdade (o `adb` guarda a chave de
-   pareamento RSA em `~/.android/` — precisa persistir entre reinícios do
-   serviço, senão o tablet pede autorização de depuração USB de novo toda
-   hora):
-   ```sh
-   sudo useradd --system --create-home --shell /usr/sbin/nologin \
-     --groups input catraca
-   ```
-2. Edite `/etc/catraca-bridge.conf` e defina `CATRACA_TABLET_IP` com o IP
-   real do tablet na rede privada.
-3. Autorize a chave adb uma vez rodando o serviço manualmente como o
-   usuário `catraca` com o tablet visível, e aceitando o prompt de
-   autorização que aparece na tela do tablet:
-   ```sh
-   sudo -u catraca -H env $(cat /etc/catraca-bridge.conf | grep -v '^#') \
-     /usr/local/bin/catraca-bridge
-   ```
-   (Ctrl+C depois de ver "conectado ao app do tablet" no log.)
-4. Habilite de verdade:
-   ```sh
-   sudo systemctl enable --now catraca-bridge
-   sudo journalctl -u catraca-bridge -f
-   ```
-
-## Testando sem mexer em `/dev/uinput`
+## Dependências (na Pi, com Raspberry Pi OS Desktop)
 
 ```sh
-CATRACA_INPUT_MODE=log CATRACA_TABLET_IP=192.168.42.129 ./catraca-bridge
+sudo apt install python3-pip python3-tk python3-dev scrot android-tools-adb
+pip install -r requirements.txt --break-system-packages
 ```
 
-Nesse modo, em vez de digitar de verdade, o programa só imprime no log o
-que teria digitado — útil pra validar a conexão adb/rede sem correr o risco
-de "digitar" numa máquina de verdade enquanto testa.
+- `python3-tk` e `python3-dev`: o `pyautogui` depende deles no Linux.
+- `scrot`: usado internamente pelo `pyautogui` (mesmo sem tirar screenshot
+  você, ele importa isso na inicialização).
+- **Importante**: isso só funciona com a Pi rodando o Raspberry Pi OS
+  **Desktop** (com sessão gráfica). No PiOS **Lite** (headless) não tem X/
+  Wayland nenhum rodando — `pyautogui` não tem pra onde digitar.
 
-## Arquivos
+## Configuração e instalação (como o usuário logado na tela, ex.: `pi`)
 
-- `src/main.c` — configuração (variáveis de ambiente), sinais, liga tudo
-- `src/adb_bridge.c/.h` — `adb connect` + `adb forward` + socket local +
-  parsing de linhas (substitui o `rpi_adb_bridge.py`)
-- `src/uinput_backend.c/.h` — teclado virtual via `/dev/uinput` (porta em C
-  do `input.rs` da versão Rust anterior deste projeto)
-- `systemd/catraca-bridge.service` — unit file
-- `udev/99-catraca-uinput.rules` — permissão pro usuário de serviço acessar
-  `/dev/uinput` sem ser root
-- `etc/catraca-bridge.conf.example` — configuração (IP do tablet, portas,
-  modo de entrada)
+```sh
+mkdir -p ~/catraca-bridge
+cp catraca_bridge.py ~/catraca-bridge/
+cp etc/catraca-bridge.conf.example ~/.config/catraca-bridge.conf
+nano ~/.config/catraca-bridge.conf   # defina CATRACA_TABLET_IP
+
+mkdir -p ~/.config/systemd/user
+cp systemd/catraca-bridge.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+```
+
+**Confirme o `DISPLAY` certo antes de habilitar** — abra um terminal na
+própria tela da Pi (não por SSH) e rode:
+
+```sh
+echo $DISPLAY
+```
+
+Se não for `:0`, edite `Environment=DISPLAY=:0` em
+`~/.config/systemd/user/catraca-bridge.service` pro valor real.
+
+Habilite (também dentro da sessão gráfica, não por SSH puro — serviço de
+usuário depende da sessão estar ativa):
+
+```sh
+systemctl --user enable --now catraca-bridge
+journalctl --user -u catraca-bridge -f
+```
+
+## Testando sem digitar de verdade
+
+```sh
+CATRACA_INPUT_MODE=log CATRACA_TABLET_IP=192.168.42.129 python3 catraca_bridge.py
+```
+
+Esse modo funciona mesmo sem sessão gráfica (o `import pyautogui` só
+acontece quando `CATRACA_INPUT_MODE=pyautogui`) — bom pra validar só a
+parte de rede/adb primeiro.
+
+## Coisas que eu já testei de verdade (não só assumi)
+
+Rodei este script aqui com um `adb` de verdade instalado, sem device
+nenhum plugado, pra conferir o que ele realmente faz — vale registrar
+porque uma das duas pegadinhas abaixo teria passado despercebida com um
+teste só "no papel":
+
+- `adb connect` pra um endereço que não existe **retorna código de saída 0
+  mesmo falhando** — o erro (`failed to connect to '...': Connection
+  refused`) só aparece no texto da saída. Por isso o código checa o texto
+  também, não só o código de saída; só olhar `returncode == 0` marcaria
+  isso como sucesso.
+- `adb forward` sem nenhum device conectado aí sim retorna código de saída
+  diferente de zero (`adb: error: no devices/emulators found`) — esse
+  comportamento é consistente com o esperado.
+- Se o binário `adb` não estiver instalado, o script agora loga isso e
+  tenta de novo no próximo ciclo, em vez de travar com um traceback (era
+  esse o bug do primeiro rascunho).
+
+## Diferenças em relação ao `rpi_adb_bridge.py` original
+
+- ADB de rede (`adb connect`) em vez de assumir que o cabo USB já está
+  plugado.
+- Reconecta sozinho (adb + socket) se a conexão cair, com backoff simples.
+- Roda como serviço systemd de usuário, reinicia sozinho se cair.
+- Validação da credencial (só dígitos, até 11 caracteres) antes de digitar
+  qualquer coisa.

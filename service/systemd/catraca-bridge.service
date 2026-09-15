@@ -1,34 +1,22 @@
 [Unit]
-Description=Catraca — ponte ADB (rede) entre o tablet e o teclado virtual da Pi
-Documentation=https://github.com/rafaelfrancapc/mobile-usb-keyboard-interface
-After=network-online.target
-Wants=network-online.target
+Description=Catraca — ponte ADB (rede) com digitação via pyautogui
+# Precisa da sessão gráfica já ativa (pyautogui não roda headless) — por
+# isso PartOf/After em graphical-session.target, e por isso este é um
+# serviço de USUÁRIO (systemctl --user), não um serviço de sistema.
+After=graphical-session.target
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/catraca-bridge.conf
-ExecStart=/usr/local/bin/catraca-bridge
+EnvironmentFile=%h/.config/catraca-bridge.conf
 
-# Reconecta sozinho se o tablet cair, reiniciar, trocar de IP etc.
+# Ajuste se o seu setup usar outro display/monitor — pra confirmar o valor
+# certo, abra um terminal DENTRO da sessão gráfica da Pi e rode `echo $DISPLAY`.
+Environment=DISPLAY=:0
+
+ExecStart=/usr/bin/python3 %h/catraca-bridge/catraca_bridge.py
 Restart=always
 RestartSec=3
 
-# Roda sem privilégio de root: precisa apenas de acesso a /dev/uinput,
-# concedido via grupo "input" pela regra de udev (99-catraca-uinput.rules).
-# Ver README para criar o usuário "catraca" e adicioná-lo ao grupo.
-User=catraca
-Group=catraca
-SupplementaryGroups=input
-
-# Superfície de ataque reduzida — mas SEM ProtectHome: o "adb" que este
-# serviço invoca guarda sua chave RSA de pareamento em ~/.android/ do
-# usuário "catraca", e ela precisa persistir entre reinícios do serviço
-# (senão o tablet pediria autorização de depuração USB de novo a cada
-# restart). Dê um HOME de verdade (gravável) pro usuário "catraca" — ver
-# README.
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical-session.target
